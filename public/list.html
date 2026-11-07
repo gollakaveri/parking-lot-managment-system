@@ -1,0 +1,136 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Manage Records</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">PARK<span>LOT</span></div>
+    <nav>
+        <a href="/">Dashboard</a>
+        <a href="list.html?type=people">People</a>
+        <a href="list.html?type=slots">Parking Slots</a>
+        <a href="list.html?type=vehicles">Vehicles</a>
+        <a href="list.html?type=records">Parking Records</a>
+    </nav>
+</header>
+
+<main class="container">
+    <div class="page-head">
+        <div>
+            <p class="eyebrow">MANAGEMENT</p>
+            <h1 id="heading">Records</h1>
+            <p class="muted">Create, view, update and delete records.</p>
+        </div>
+        <a class="btn primary" id="addLink">＋ Add New</a>
+    </div>
+
+    <div class="toolbar">
+        <input id="filter" placeholder="Search records..." oninput="filterRows()">
+        <button class="btn secondary" onclick="loadRecords()">↻ Refresh</button>
+    </div>
+
+    <div id="error" class="error"></div>
+
+    <div class="table-wrap">
+        <table>
+            <thead id="thead"></thead>
+            <tbody id="tbody">
+                <tr><td>Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <a class="back" href="/">← Back to dashboard</a>
+</main>
+
+<footer>Parking Lot Management System</footer>
+
+<script src="common.js"></script>
+<script>
+const type = getType();
+const pk = primaryKeys[type];
+
+document.getElementById("heading").textContent = labels[type];
+document.getElementById("addLink").href = "insert.html?type=" + type;
+
+async function loadRecords() {
+    try {
+        document.getElementById("error").textContent = "";
+
+        const rows = await api("/api/" + type);
+        renderRows(rows);
+
+    } catch (e) {
+        document.getElementById("error").textContent = e.message;
+    }
+}
+
+function renderRows(rows) {
+    const cols = columns[type];
+
+    document.getElementById("thead").innerHTML =
+        "<tr>" +
+        cols.map(c => `<th>${esc(c.label)}</th>`).join("") +
+        "<th>Actions</th></tr>";
+
+    document.getElementById("tbody").innerHTML =
+        rows.length
+        ? rows.map(r => {
+            const id = r[pk];
+
+            return "<tr>" +
+                cols.map(c =>
+                    `<td>${esc(r[c.key] ?? "—")}</td>`
+                ).join("") +
+                `<td class="actions">
+                    <a href="listOne.html?type=${type}&id=${encodeURIComponent(id)}">View</a>
+                    <a href="update.html?type=${type}&id=${encodeURIComponent(id)}">Edit</a>
+                    <button class="text-button danger"
+                        onclick="removeRecord('${esc(id)}')">
+                        Delete
+                    </button>
+                </td></tr>`;
+        }).join("")
+        : `<tr><td colspan="${cols.length + 1}" class="empty">
+            No records found. Add your first record.
+           </td></tr>`;
+
+    filterRows();
+}
+
+function filterRows() {
+    const q = document.getElementById("filter").value.toLowerCase();
+
+    document.querySelectorAll("#tbody tr").forEach(tr => {
+        tr.style.display =
+            tr.innerText.toLowerCase().includes(q) ? "" : "none";
+    });
+}
+
+async function removeRecord(id) {
+    if (!confirm("Are you sure you want to delete this record?")) return;
+
+    try {
+        await api("/api/" + type + "/" + id, {
+            method: "DELETE"
+        });
+
+        alert("Record deleted successfully!");
+        await loadRecords();
+
+    } catch (e) {
+        alert(e.message);
+    }
+}
+
+loadRecords();
+</script>
+
+</body>
+</html>

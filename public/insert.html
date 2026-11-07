@@ -1,0 +1,137 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insert Record - Parking Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">PARK<span>LOT</span></div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="list.html?type=people">People</a>
+    <a href="list.html?type=slots">Parking Slots</a>
+    <a href="list.html?type=vehicles">Vehicles</a>
+    <a href="list.html?type=records">Parking Records</a>
+  </nav>
+</header>
+
+<main class="container narrow">
+  <h1 id="heading">Insert Record</h1>
+  <form id="insertForm" class="form-card">
+    <div id="formFields">Loading...</div>
+    <button type="submit" class="btn primary">Insert Record</button>
+  </form>
+  <p><a id="backLink" href="/">Back to Dashboard</a></p>
+</main>
+
+<footer>Parking Lot Management System</footer>
+
+<script src="common.js"></script>
+<script>
+const type = getType();
+
+const fields = {
+  people: [
+    ["user_id", "User ID", "number", true],
+    ["user_name", "User Name", "text", true],
+    ["phonenumber", "Phone Number", "text", true],
+    ["email", "Email", "email", false],
+    ["role", "Role", "text", false]
+  ],
+  slots: [
+    ["slot_id", "Slot ID", "number", true],
+    ["slot_number", "Slot Number", "text", true],
+    ["vehicle_type", "Vehicle Type", "text", true],
+    ["location", "Location", "text", true],
+    ["status", "Status", "text", true]
+  ],
+  vehicles: [
+    ["vehicle_id", "Vehicle ID", "number", true],
+    ["user_id", "User ID", "number", true],
+    ["vehicle_number", "Vehicle Number", "text", true],
+    ["vehicle_type", "Vehicle Type", "text", true]
+  ],
+  records: [
+    ["record_id", "Record ID", "number", true],
+    ["vehicle_id", "Vehicle ID", "number", true],
+    ["slot_id", "Slot ID", "number", true],
+    ["entry_time", "Entry Time", "datetime-local", true],
+    ["exit_time", "Exit Time", "datetime-local", false],
+    ["parking_fee", "Parking Fee", "number", true],
+    ["status", "Status", "text", true]
+  ]
+};
+
+if (!fields[type]) {
+  document.getElementById("formFields").textContent =
+    "Invalid insert type. Please go back and select a valid table.";
+} else {
+  document.getElementById("heading").textContent =
+    "Insert " + type.charAt(0).toUpperCase() + type.slice(1);
+
+  document.getElementById("backLink").href =
+    "list.html?type=" + encodeURIComponent(type);
+
+  document.getElementById("formFields").innerHTML =
+    fields[type].map(([name, label, inputType, required]) => `
+      <div class="form-group">
+        <label for="${name}">${label}</label>
+        <input
+          id="${name}"
+          name="${name}"
+          type="${inputType}"
+          ${required ? "required" : ""}
+          ${inputType === "number" ? 'min="0"' : ""}
+          step="${name === "parking_fee" ? "0.01" : "any"}"
+        >
+      </div>
+    `).join("");
+}
+
+document.getElementById("insertForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  if (!fields[type]) return;
+
+  const data = {};
+
+  fields[type].forEach(([name, label, inputType]) => {
+    const value = document.getElementById(name).value.trim();
+
+    if (value !== "") {
+      data[name] = value;
+    }
+  });
+
+  try {
+    const response = await fetch("/api/" + type, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || result.message || "Insert failed");
+    }
+
+    alert("Record inserted successfully!");
+    window.location.href = "list.html?type=" + type;
+
+  } catch (error) {
+    alert("Insert Error: " + error.message);
+    console.error(error);
+  }
+});
+</script>
+
+</body>
+</html>

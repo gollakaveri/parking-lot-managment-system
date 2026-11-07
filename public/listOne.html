@@ -1,0 +1,67 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Record Details</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">PARK<span>LOT</span></div>
+    <nav>
+        <a href="/">Dashboard</a>
+        <a href="list.html?type=people">People</a>
+        <a href="list.html?type=slots">Parking Slots</a>
+        <a href="list.html?type=vehicles">Vehicles</a>
+        <a href="list.html?type=records">Parking Records</a>
+    </nav>
+</header>
+
+<main class="container narrow">
+    <p class="eyebrow">RECORD DETAILS</p>
+    <h1 id="heading">Details</h1>
+
+    <div id="details" class="details-card">Loading...</div>
+
+    <p class="back">
+        <a id="backLink" href="/">← Back to list</a>
+    </p>
+</main>
+
+<footer>Parking Lot Management System</footer>
+
+<script src="common.js"></script>
+<script>
+(async () => {
+    const type = getType();
+    const id = new URLSearchParams(location.search).get("id");
+
+    if (!id) throw Error("Record ID is missing");
+
+    document.getElementById("heading").textContent =
+        labels[type] + " Details";
+
+    document.getElementById("backLink").href =
+        "list.html?type=" + type;
+
+    const row = await api("/api/" + type + "/" + encodeURIComponent(id));
+
+    document.getElementById("details").innerHTML =
+        columns[type].map(c => `
+            <div class="detail-row">
+                <span>${esc(c.label)}</span>
+                <strong>${esc(row[c.key] ?? "—")}</strong>
+            </div>
+        `).join("") +
+        `<a class="btn primary"
+            href="update.html?type=${type}&id=${encodeURIComponent(id)}">
+            Edit Record
+        </a>`;
+})().catch(e => showError(e.message));
+</script>
+
+</body>
+</html>
